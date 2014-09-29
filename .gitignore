@@ -63,3 +63,5 @@ docs/source/api/*.rst
 
 docs/source/plugins/*.rst
 !docs/source/plugins/index.rst
+emsm.pyproj.user
+emsm.v11.suo
