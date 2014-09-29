@@ -41,6 +41,8 @@ Configuration
 
     The shell script to execute.
     Passed arguments are in order:
+        0. World name
+        1. Path to world files
 
 **suspend_world_io**
 
@@ -75,7 +77,6 @@ Usage
 # Modules
 # ------------------------------------------------
 import os
-import shutil
 
 
 # local
@@ -110,22 +111,23 @@ class ShellScript(BasePlugin):
         """
         Sets the configuration up.
         """
-        # Get the configuration dictionary for this plugin.
-        conf = self.conf()        
-        self._script_path = conf.get("script_path")
+        # for 3.0.0 this is self.conf()  
+        conf = self.conf
+        self._script_path = conf.get("script_path", "")
+        print("conf.get:script_path {}".format(self._script_path))
         self._suspend_world_io = conf.getboolean("suspend_world_io", True)
 
-        conf.clear()
+        # maybe required in 3.0.0 : conf.clear()
         conf["script_path"] = self._script_path
-        conf["suspend_world_io"] = self._suspend_world_io
+        conf["suspend_world_io"] = str(self._suspend_world_io)
         return None
 
     def _setup_argparser(self):
         """
         Sets the argument parser up.
         """
-        # Get the plugin's argument parser.
-        parser = self.argparser()
+        # for 3.0.0 this is self.argparser()
+        parser = self.argparser
 
         parser.add_argument("--path", "-p",
             action = "store",
@@ -146,26 +148,33 @@ class ShellScript(BasePlugin):
         """
 
         scriptpath = self._script_path
+
         if args.path:
             scriptpath = args.path
+
+        if not scriptpath:
+            print("conf:script_path is empty and --script param is as well.")
+            raise ValueError("conf:script_path is empty and --script param is as well.")
 
         suspendio = self._suspend_world_io
         if args.suspendio:
             suspendio = True
-
-        worlds = self.app().worlds().get_selected()
+        
+        # in 3.0.0 this is self.app().worlds().get_selected()
+        worlds = self.app.worlds.get_selected()
         for world in worlds:
             if suspendio:
-                try:            
+                try:
+                    print("World {0} I/O will be halted".format(world.name))
                     if world.is_online():                
                         world.send_command("save-off")
                         # We use verbose send, to wait until the world has been
                         # saved.
-                        world.send_command_get_output("save-all", timeout=10)
+                        world.send_command_get_output("save-all", timeout=30)
 
-                    # Copy the world data to *backup_dir*.
                     self.executescript(scriptpath, world)
                 finally:
+                    print("World {0} I/O will be resumed".format(world.name))
                     if world.is_online():
                         world.send_command("save-on")
                         world.send_command("save-all")
@@ -176,4 +185,7 @@ class ShellScript(BasePlugin):
     def executescript(self, scriptpath, world):
         """
         """
-        print("script {0} for world {1} would be executed".format(scriptpath, world.name()))
+
+        # in 3.0.0 this is world.name()
+        print("script {0} for world {1} will be executed".format(scriptpath, world.name))
+        os.execl(scriptpath, world.name, world.directory)
