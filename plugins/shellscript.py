@@ -188,4 +188,4 @@ class ShellScript(BasePlugin):
 
         # in 3.0.0 this is world.name()
         print("script {0} for world {1} will be executed".format(scriptpath, world.name))
-        os.execl(scriptpath, world.name, world.directory)
+        os.spawnl(os.P_WAIT, scriptpath, scriptpath, world.name, world.directory)
